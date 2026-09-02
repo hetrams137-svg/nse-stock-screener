@@ -1,0 +1,131 @@
+"""
+Record Management & File-Based Database System
+-------------------------------------------------
+A console application for creating, searching, updating, and deleting
+records with persistent file storage (JSON-based). Includes record-ID
+validation and duplicate-ID handling.
+
+Author: Dorilal Pandey
+"""
+
+import json
+import os
+
+
+DB_FILE = "records.json"
+
+
+def load_records() -> dict:
+    """Load records from the JSON file. Returns empty dict if file doesn't exist."""
+    if not os.path.exists(DB_FILE):
+        return {}
+    with open(DB_FILE, "r") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return {}
+
+
+def save_records(records: dict) -> None:
+    """Persist records dict to the JSON file."""
+    with open(DB_FILE, "w") as f:
+        json.dump(records, f, indent=2)
+
+
+def add_record(records: dict, record_id: str, data: dict) -> str:
+    """Add a new record. Rejects duplicate IDs."""
+    if record_id in records:
+        return f"Error: Record ID '{record_id}' already exists."
+    records[record_id] = data
+    save_records(records)
+    return f"Record '{record_id}' added successfully."
+
+
+def search_record(records: dict, record_id: str) -> dict | str:
+    """Search for a record by ID."""
+    if record_id not in records:
+        return f"Error: Record ID '{record_id}' not found."
+    return records[record_id]
+
+
+def update_record(records: dict, record_id: str, data: dict) -> str:
+    """Update an existing record. Fails if the ID doesn't exist."""
+    if record_id not in records:
+        return f"Error: Record ID '{record_id}' not found."
+    records[record_id].update(data)
+    save_records(records)
+    return f"Record '{record_id}' updated successfully."
+
+
+def delete_record(records: dict, record_id: str) -> str:
+    """Delete a record by ID."""
+    if record_id not in records:
+        return f"Error: Record ID '{record_id}' not found."
+    del records[record_id]
+    save_records(records)
+    return f"Record '{record_id}' deleted successfully."
+
+
+def list_records(records: dict) -> None:
+    """Print all records."""
+    if not records:
+        print("No records found.")
+        return
+    for rid, data in records.items():
+        print(f"{rid}: {data}")
+
+
+def main_menu():
+    records = load_records()
+
+    menu = """
+Record Management System
+1. Add record
+2. Search record
+3. Update record
+4. Delete record
+5. List all records
+6. Exit
+"""
+    while True:
+        print(menu)
+        choice = input("Choose an option: ").strip()
+
+        if choice == "1":
+            rid = input("Enter record ID: ").strip()
+            name = input("Enter name: ").strip()
+            value = input("Enter value: ").strip()
+            print(add_record(records, rid, {"name": name, "value": value}))
+
+        elif choice == "2":
+            rid = input("Enter record ID to search: ").strip()
+            print(search_record(records, rid))
+
+        elif choice == "3":
+            rid = input("Enter record ID to update: ").strip()
+            name = input("New name (leave blank to skip): ").strip()
+            value = input("New value (leave blank to skip): ").strip()
+            update_data = {}
+            if name:
+                update_data["name"] = name
+            if value:
+                update_data["value"] = value
+            print(update_record(records, rid, update_data))
+
+        elif choice == "4":
+            rid = input("Enter record ID to delete: ").strip()
+            print(delete_record(records, rid))
+
+        elif choice == "5":
+            list_records(records)
+
+        elif choice == "6":
+            print("Goodbye!")
+            break
+
+        else:
+            print("Invalid option. Please try again.")
+
+
+if __name__ == "__main__":
+    main_menu()
